@@ -8,6 +8,7 @@ import sys, os
 if __name__=="__main__":
     parser = OptionParser(usage="%prog file_with_models.smh file_needing_models.smh output_file.smh")
     parser.add_option("--force", dest="force", action="store_true", default=False)
+    parser.add_option("--refit", dest="refit", action="store_false", default=True)
     options, args = parser.parse_args()
     
     origfname, datafname, outfname = args
@@ -39,6 +40,8 @@ if __name__=="__main__":
             newmodel._update_parameter_names()
             newmodel._verify_transitions()
             newmodel._verify_metadata()
+            if options.refit and model.is_acceptable:
+                newmodel.fit()
         elif instance(model, SpectralSynthesisModel):
             newmodel = ProfileFittingModel(session2, model.transitions, model.metadata["elements"],
                                            what_species=model.metadata["species"][0],
@@ -51,5 +54,5 @@ if __name__=="__main__":
             newmodel._verify_transitions()
             pass
         new_spectral_models.append(newmodel)
-    session2.metadata["spectral_models"] = spectral_models
+    session2.metadata["spectral_models"] = new_spectral_models
     session2.save(outfname, overwrite=options.force)
