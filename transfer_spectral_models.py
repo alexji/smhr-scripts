@@ -1,17 +1,55 @@
 import numpy as np
 from smh import Session
+from smh.spectral_models import ProfileFittingModel, SpectralSynthesisModel
 
-import optparse
+from optparse import OptionParser
 import sys, os
 
 if __name__=="__main__":
-    assert len(sys.argv) == 4, "Usage: python transfer_spectral_models.py smh_file_with_masks.smh smh_file_needing_masks.smh output_smh_file.smh"
-    origfname = sys.argv[1]
-    newfname = sys.argv[2]
-    outfname = sys.argv[3]
-    assert os.path.exists(fname), "input {} does not exist".format(fname)
-    assert not os.path.exists(outfname), "output {} already exists".format(outfname)
+    parser = OptionParser(usage="%prog file_with_models.smh file_needing_models.smh output_file.smh")
+    parser.add_option("--force", dest="force", action="store_true", default=False)
+    options, args = parser.parse_args()
+    
+    origfname, datafname, outfname = args
 
-    session = Session.load(fname)
+    tmpfname = "./.tmp.pkl"
+    while os.path.exists(tmpfname):
+        tmpfname = tmpfname[:-4]+"p.pkl"
     
+    assert os.path.exists(origfname), "input 1 {} does not exist".format(origfname)
+    assert os.path.exists(datafname), "input 2 {} does not exist".format(datafname)
+    assert options.force or (not os.path.exists(outfname)), "output {} already exists".format(outfname)
     
+    session1 = Session.load(origfname)
+    session2 = Session.load(datafname)
+    
+    profile_keys = ["profile","central_weighting","window","continuum_order","detection_sigma",
+                    "detection_pixels","max_iterations","velocity_tolerance","mask","antimask_flag",
+                    "elements","species"]
+    synthesis_keys = ["mask","window","continuum_order","velocity_tolerance","smoothing_kernel",
+                      "initial_abundance_bounds","elements","species",
+                      "manual_continuum","manual_sigma_smooth","manual_rv"]
+    
+    new_spectral_models = []
+    for model in session1.spectral_models:
+        if isinstance(model, ProfileFittingModel):
+            newmodel = ProfileFittingModel(session2, model.transitions)
+            for key in profile_keys:
+                newmodel.metadata[key] = model.metadata[key]
+            newmodel._update_parameter_names()
+            newmodel._verify_transitions()
+            newmodel._verify_metadata()
+        elif instance(model, SpectralSynthesisModel):
+            newmodel = ProfileFittingModel(session2, model.transitions, model.metadata["elements"],
+                                           what_species=model.metadata["species"][0],
+                                           what_wavelength=model.wavelength,
+                                           what_expot=model.expot,
+                                           what_loggf=model.loggf)
+            for key in synthesis_keys:
+                newmodel.metadata[key] = model.metadata[key]
+            newmodel._update_parameter_names()
+            newmodel._verify_transitions()
+            pass
+        new_spectral_models.append(newmodel)
+    session2.metadata["spectral_models"] = spectral_models
+    session2.save(outfname, overwrite=options.force)
