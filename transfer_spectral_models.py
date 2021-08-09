@@ -41,7 +41,10 @@ if __name__=="__main__":
             newmodel._verify_transitions()
             newmodel._verify_metadata()
             if options.refit and model.is_acceptable:
-                newmodel.fit()
+                try:
+                    newmodel.fit()
+                except:
+                    newmodel.is_acceptable = False
         elif instance(model, SpectralSynthesisModel):
             newmodel = ProfileFittingModel(session2, model.transitions, model.metadata["elements"],
                                            what_species=model.metadata["species"][0],
