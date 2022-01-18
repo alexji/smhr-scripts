@@ -38,8 +38,9 @@ if __name__=="__main__":
     ipython run_syntheses.py file_in.smh file_out.smh
     """
     ## Edit these master list paths to match where your files are
-    master_list_path = "/Users/alexji/S5/linelists/s5_sorted_master_list.txt"
-    master_list_extra_path = "/Users/alexji/S5/linelists/s5_sorted_master_list_extra.txt"
+    ## You'll have to edit the master list files themselves to point to the right place too
+    master_list_path = "/Users/alexji/Dropbox/S5/linelists/s5_sorted_master_list.txt"
+    master_list_extra_path = "/Users/alexji/Dropbox/S5/linelists/s5_sorted_master_list.txt"
     numiter = 3
     
     assert len(sys.argv) == 3, "Format: python run_syntheses.py file_in.smh file_out.smh"
@@ -80,7 +81,7 @@ if __name__=="__main__":
             print("Fitting {} {}".format(model.wavelength, model.species))
             update_abundance_table(session, model)
             try:
-                model.iterfit(maxiter=3)
+                model.iterfit(maxiter=5)
             except:
                 print("Failed on this one")
                 model.is_acceptable = False
